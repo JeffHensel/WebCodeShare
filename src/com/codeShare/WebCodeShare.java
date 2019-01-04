@@ -14,11 +14,14 @@ import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
 import java.io.*;
 import java.nio.charset.*;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class WebCodeShare {
     private static final int LISTENER_PORT = 8887;
 
     private String editableData = "// Type code here.\n";
+    private Lock dataLock = new ReentrantLock();
     private String spectatorResponse1 = "<HTML>\n<H1>Code Share</H1>\n<meta http-equiv=\"refresh\" content=\"1\">\n" +
             "<div contenteditable=\"true\" id=\"sharedSpace\" style=\"border:1px solid black; height: 80%;\">\n";
     private String editableResponse1 = "<HTML>\n<H1>Code Share</H1>\n" +
@@ -29,19 +32,32 @@ public class WebCodeShare {
                     "<form method='POST' action=\"/edit\" enctype='text/plain' id=\"postForm\" target=\"hiddenFrame\">\n" +
                     "  <input id=\"editedInput\" name=\"1\" type=\"hidden\">\n" +
                     "</form>\n" +
+                    "<button onclick=\"httpGet()\">Click me</button>" +
                     "<script>\n" +
                     "  document.getElementById(\"sharedSpace\").addEventListener(\"input\", function() {\n" +
                     "    document.getElementById(\"editedInput\").value = document.getElementById(\"sharedSpace\").innerHTML;\n" +
                     "    document.getElementById(\"postForm\").submit();\n" +
                     "  }, false);\n" +
                     "</script>\n" +
+                    "<script>\n" +
+                    "  setInterval(function httpGet()\n" +
+                    "  {\n" +
+                    "    var initSharedSpace = document.getElementById(\"sharedSpace\").innerHTML.replace(/\\s+/g, \" \");\n" +
+                    "    var xmlHttp = new XMLHttpRequest();\n" +
+                    "    xmlHttp.open( \"GET\", \"/textChange\", false ); // false for synchronous request\n" +
+                    "    xmlHttp.send( null );\n" +
+                    "    if (initSharedSpace != xmlHttp.responseText.replace(/\\s+/g, \" \") && initSharedSpace == document.getElementById(\"sharedSpace\").innerHTML.replace(/\\s+/g, \" \")) {\n" +
+                    "      document.getElementById(\"sharedSpace\").innerHTML = xmlHttp.responseText;\n" +
+                    "    }\n" +
+                    "  }, 1000);\n" +
+                    "</script>/n" +
                     "</HTML>\n";
 
     WebCodeShare() throws Exception {
         HttpServer server = HttpServer.create(new InetSocketAddress(LISTENER_PORT), 0);
         server.createContext("/", new BaseHandler());
         server.createContext("/edit", new EditHandler());
-        server.createContext("/spectator", new BaseSpectatorHandler());
+        server.createContext("/textChange", new BaseSpectatorHandler());
         server.setExecutor(null);
         server.start();
     }
@@ -50,6 +66,7 @@ public class WebCodeShare {
     private class BaseHandler implements HttpHandler {
         @Override
         public void handle(HttpExchange t) throws IOException {
+            dataLock.lock();
             String response = editableResponse1 + editableData + editableResponse2;
             t.sendResponseHeaders(200, response.length());
             OutputStream os = t.getResponseBody();
@@ -62,7 +79,8 @@ public class WebCodeShare {
     private class BaseSpectatorHandler implements HttpHandler {
         @Override
         public void handle(HttpExchange t) throws IOException {
-            String response = spectatorResponse1 + editableData + editableResponse2;
+            dataLock.lock();
+            String response = editableData;
             t.sendResponseHeaders(200, response.length());
             OutputStream os = t.getResponseBody();
             os.write(response.getBytes());
@@ -74,6 +92,7 @@ public class WebCodeShare {
     private class EditHandler implements HttpHandler {
         @Override
         public void handle(HttpExchange t) throws IOException {
+            dataLock.lock();
             InputStream inputStream = t.getRequestBody();
 
             StringBuilder textBuilder = new StringBuilder();
