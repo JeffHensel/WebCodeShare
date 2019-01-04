@@ -1,22 +1,21 @@
-package com.company;
+package com.codeShare;
+
+/**
+ * @author Jeffrey Hensel
+ * @date 1/4/2018
+ */
 
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.io.InputStream;
-import java.io.ByteArrayOutputStream;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
 import java.io.*;
 import java.nio.charset.*;
-import java.util.Map;
-import java.util.HashMap;
-import java.util.List;
-import java.net.URLDecoder;
-import java.util.ArrayList;
 
-public class MyWebHandler {
+public class WebCodeShare {
     private static final int LISTENER_PORT = 8887;
 
     private String editableData = "// Type code here.\n";
@@ -38,7 +37,7 @@ public class MyWebHandler {
                     "</script>\n" +
                     "</HTML>\n";
 
-    MyWebHandler() throws Exception {
+    WebCodeShare() throws Exception {
         HttpServer server = HttpServer.create(new InetSocketAddress(LISTENER_PORT), 0);
         server.createContext("/", new BaseHandler());
         server.createContext("/edit", new EditHandler());
@@ -106,7 +105,7 @@ public class MyWebHandler {
     }
 
     public static void main(String[] args) throws Exception {
-        MyWebHandler handler = new MyWebHandler();
+        /*MyWebHandler handler = */new WebCodeShare();
     }
 
 }
