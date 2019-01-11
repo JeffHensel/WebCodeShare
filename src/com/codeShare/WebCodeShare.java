@@ -20,28 +20,30 @@ import java.util.concurrent.locks.ReentrantLock;
 public class WebCodeShare {
     private static final int LISTENER_PORT = 8887;
 
-    private String editableData = "// Type code here.\n";
+    private String editableData = "// Type code here.\n\n\n\n\n\n";
     private Lock dataLock = new ReentrantLock();
-    private String spectatorResponse1 = "<HTML>\n<H1>Code Share</H1>\n<meta http-equiv=\"refresh\" content=\"1\">\n" +
-            "<div contenteditable=\"true\" id=\"sharedSpace\" style=\"border:1px solid black; height: 80%;\">\n";
+
     private String editableResponse1 = "<HTML>\n<H1>Code Share</H1>\n" +
-            "<div contenteditable=\"true\" id=\"sharedSpace\" style=\"border:1px solid black; height: 80%;\">\n";
+            "<div contenteditable=\"true\" id=\"sharedSpace\" style=\"border:1px solid black; height: 80%;overflow-y: scroll;\">\n";
     private String editableResponse2 =
             "</div>\n" +
                     "<iframe name=\"hiddenFrame\" width=\"0\" height=\"0\" border=\"0\" style=\"display: none;\"></iframe>\n" +
                     "<form method='POST' action=\"/edit\" enctype='text/plain' id=\"postForm\" target=\"hiddenFrame\">\n" +
                     "  <input id=\"editedInput\" name=\"1\" type=\"hidden\">\n" +
                     "</form>\n" +
-                    "<button onclick=\"httpGet()\">Click me</button>" +
                     "<script>\n" +
+                    "  var justChanged = false;\n" +
                     "  document.getElementById(\"sharedSpace\").addEventListener(\"input\", function() {\n" +
                     "    document.getElementById(\"editedInput\").value = document.getElementById(\"sharedSpace\").innerHTML;\n" +
                     "    document.getElementById(\"postForm\").submit();\n" +
+                    "    justChanged = true;\n" +
                     "  }, false);\n" +
-                    "</script>\n" +
-                    "<script>\n" +
                     "  setInterval(function httpGet()\n" +
                     "  {\n" +
+                    "    if (justChanged){\n" +
+                    "      justChanged = false;\n" +
+                    "      return;\n" +
+                    "    }\n" +
                     "    var initSharedSpace = document.getElementById(\"sharedSpace\").innerHTML.replace(/\\s+/g, \" \");\n" +
                     "    var xmlHttp = new XMLHttpRequest();\n" +
                     "    xmlHttp.open( \"GET\", \"/textChange\", false ); // false for synchronous request\n" +
@@ -50,7 +52,7 @@ public class WebCodeShare {
                     "      document.getElementById(\"sharedSpace\").innerHTML = xmlHttp.responseText;\n" +
                     "    }\n" +
                     "  }, 1000);\n" +
-                    "</script>/n" +
+                    "</script>\n" +
                     "</HTML>\n";
 
     WebCodeShare() throws Exception {
@@ -66,7 +68,7 @@ public class WebCodeShare {
     private class BaseHandler implements HttpHandler {
         @Override
         public void handle(HttpExchange t) throws IOException {
-            dataLock.lock();
+            //dataLock.lock();
             String response = editableResponse1 + editableData + editableResponse2;
             t.sendResponseHeaders(200, response.length());
             OutputStream os = t.getResponseBody();
@@ -75,11 +77,11 @@ public class WebCodeShare {
         }
     }
 
-    // Endpoint matching "/spectator"
+    // Endpoint matching "/textChange"
     private class BaseSpectatorHandler implements HttpHandler {
         @Override
         public void handle(HttpExchange t) throws IOException {
-            dataLock.lock();
+            //dataLock.lock();
             String response = editableData;
             t.sendResponseHeaders(200, response.length());
             OutputStream os = t.getResponseBody();
@@ -92,7 +94,7 @@ public class WebCodeShare {
     private class EditHandler implements HttpHandler {
         @Override
         public void handle(HttpExchange t) throws IOException {
-            dataLock.lock();
+            //dataLock.lock();
             InputStream inputStream = t.getRequestBody();
 
             StringBuilder textBuilder = new StringBuilder();
