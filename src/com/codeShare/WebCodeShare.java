@@ -20,11 +20,11 @@ import java.util.concurrent.locks.ReentrantLock;
 public class WebCodeShare {
     private static final int LISTENER_PORT = 8887;
 
-    private String editableData = "// Type code here.\n\n\n\n\n\n";
+    private String editableData = "\n<div>// Type code here</div>\n";
     private Lock dataLock = new ReentrantLock();
 
     private String editableResponse1 = "<HTML>\n<H1>Code Share</H1>\n" +
-            "<div contenteditable=\"true\" id=\"sharedSpace\" style=\"border:1px solid black; height: 80%;overflow-y: scroll;\">\n";
+            "<div contenteditable=\"true\" id=\"sharedSpace\" style=\"border:1px solid black; height: 80%;overflow-y: scroll;\">";
     private String editableResponse2 =
             "</div>\n" +
                     "<iframe name=\"hiddenFrame\" width=\"0\" height=\"0\" border=\"0\" style=\"display: none;\"></iframe>\n" +
@@ -34,9 +34,10 @@ public class WebCodeShare {
                     "<script>\n" +
                     "  var justChanged = false;\n" +
                     "  document.getElementById(\"sharedSpace\").addEventListener(\"input\", function() {\n" +
+                    "    justChanged = true;\n" + // Initial change
                     "    document.getElementById(\"editedInput\").value = document.getElementById(\"sharedSpace\").innerHTML;\n" +
                     "    document.getElementById(\"postForm\").submit();\n" +
-                    "    justChanged = true;\n" +
+                    "    justChanged = true;\n" + // Just in case it refreshed during the post
                     "  }, false);\n" +
                     "  setInterval(function httpGet()\n" +
                     "  {\n" +
@@ -51,7 +52,7 @@ public class WebCodeShare {
                     "    if (initSharedSpace != xmlHttp.responseText.replace(/\\s+/g, \" \") && initSharedSpace == document.getElementById(\"sharedSpace\").innerHTML.replace(/\\s+/g, \" \")) {\n" +
                     "      document.getElementById(\"sharedSpace\").innerHTML = xmlHttp.responseText;\n" +
                     "    }\n" +
-                    "  }, 1000);\n" +
+                    "  }, 100);\n" +
                     "</script>\n" +
                     "</HTML>\n";
 
